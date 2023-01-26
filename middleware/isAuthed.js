@@ -2,13 +2,12 @@ const db = require("../models");
 const jwt = require("jsonwebtoken");
 
 const isAuthed = async (req, res, next) => {
-  const { authorization } = await req.headers;
+  const token = await req.cookies.access_token
 
-  if (!authorization) {
+  if (!token) {
     return res.status(401).json({ error: "You do not have access" });
   }
 
-  const token = authorization.split(" ")[1];
   try {
     const { userId } = jwt.verify(token, process.env.TOKEN_SECREN);
 

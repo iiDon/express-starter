@@ -1,16 +1,18 @@
 const db = require("../models");
 const jwt = require("jsonwebtoken");
+const bycrypt = require("bcrypt");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 //  register
 const register = async (req, res, next) => {
-  const { username, email, password } = req.body;
-
-  if (!email || !password)
-    res.status(401).json({ Error: "Sorry you have missing fields" });
+  const { username, email, password } = await req.body;
+  console.log(req.body);
+  if (!email || !password) {
+    return res.status(401).json({ Error: "Sorry you have missing fields" });
+  }
 
   const emailUsed = await db.User.findOne({ where: { email } });
-  console.log(emailUsed);
   if (username) {
     const usernameUsed = await db.User.findOne({
       where: { username },
@@ -22,10 +24,12 @@ const register = async (req, res, next) => {
   if (emailUsed)
     return res.status(401).json({ Error: "Sorry this mail is used " });
 
+  const hashedPassword = bycrypt.hash(password, 10);
+
   const newUser = await db.User.create({
     username,
     email,
-    password,
+    password: hashedPassword,
   });
 
   res.status(200).json("You have sucessfuly registered");
@@ -47,8 +51,7 @@ const login = async (req, res, next) => {
       .status(401)
       .json({ error: "Sorry, Email & Password is not correct" });
   }
-
-  const isValid = password === user.dataValues.password;
+  const isValid = await bycrypt.compare(password, user.password);
 
   if (!isValid) {
     return res
@@ -56,11 +59,22 @@ const login = async (req, res, next) => {
       .json({ error: "Sorry, Email & Password is not correct" });
   }
 
-  const token = jwt.sign({ userId: user.id }, process.env.TOKEN_SECREN, {
+  const token = jwt.sign({ 
+    userId: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role
+   }, process.env.TOKEN_SECREN, {
     expiresIn: "1h",
   });
 
-  return res.status(200).json(token);
+  return res
+    .cookie("access_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    })
+    .status(200)
+    .json({ message: "Logged in successfully 😊 👌" });
 };
 
 module.exports = {
