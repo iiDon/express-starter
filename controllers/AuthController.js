@@ -7,7 +7,7 @@ require("dotenv").config();
 //  register
 const register = async (req, res, next) => {
   const { username, email, password } = await req.body;
-  console.log(req.body);
+
   if (!email || !password) {
     return res.status(401).json({ Error: "Sorry you have missing fields" });
   }
@@ -37,7 +37,7 @@ const register = async (req, res, next) => {
 
 // login
 const login = async (req, res, next) => {
-  const { username, email, password } = req.body;
+  const { email, password } = req.body;
 
   if (!email || !password)
     return res.status(401).json({ Error: "Sorry you have missing fields" });
